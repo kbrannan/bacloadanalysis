@@ -1,6 +1,6 @@
 raw.source.data <- function(sub.wtsd.num, sub.model.dirs) {
   
-	# Last Updated: 2014/01/22
+	# Last Updated: 2014/08/21
 	# Description: calculates source data frames and returns a list containing them
 	# Arguments:
   # sub.wtsd.num - number of sub-wtsds
@@ -95,8 +95,8 @@ raw.source.data <- function(sub.wtsd.num, sub.model.dirs) {
 	  duck.out$Accum.Pasture[!is.finite(duck.out$Accum.Pasture)] <- 0
 	  duck.out$Accum.Forest[!is.finite(duck.out$Accum.Forest)] <- 0
 	  duck.out$Accum.RAOCUT[!is.finite(duck.out$Accum.RAOCUT)] <- 0
-	  duck.out$bac.total.in.stream[!is.finite(duck.out$bac.total.in.stream)] <- 0
-  	if(ii == 1) {
+	  duck.out$bac.total.in.stream[!is.finite(duck.out$bac.total.in.stream)] <- 0	
+  if(ii == 1) {
   	  duck.all <- data.frame(subwtsd=ii,duck.out)
   	} else {
   	  duck.all <- rbind(duck.all,data.frame(subwtsd=ii,duck.out))
@@ -185,3 +185,31 @@ raw.source.data <- function(sub.wtsd.num, sub.model.dirs) {
   rm(list=ls(pattern="*all$"))
   return(raw.source.out)
 }
+
+annual.load.by.subwtsd <- function(lt.data) {
+  library(doBy)
+  ## get the names and the count of the data frames in the list
+  chr.names <- names(lt.data)
+  n.dfs <- length(chr.names)
+  ## get the total annual load to land and stream by sub-watershed from all the sources
+  df.annual.total.load <- data.frame(subwtsd=1:sub.wtsd.num,on.land=0,in.stream=0)
+  for(ii in 1:n.dfs) {
+    df.tmp <- as.data.frame(lt.data[chr.names[ii]])
+    names(df.tmp) <- gsub(paste0(chr.names[ii],"."),"",names(df.tmp))
+    if(length(grep("[Mm]onth",names(df.tmp))) == 0) {
+      df.annual.total.load$on.land <- df.annual.total.load$on.land + df.tmp$bac.total.on.land
+      df.annual.total.load$in.stream <- df.annual.total.load$in.stream + df.tmp$bac.total.in.stream
+    }
+    if(length(grep("[Mm]onth",names(df.tmp))) > 0) {
+      df.sum <- summaryBy(bac.total.on.land + bac.total.in.stream ~ subwtsd, data=df.tmp,FUN=c(sum), keep.names=TRUE)
+      df.annual.total.load$on.land <- df.annual.total.load$on.land + df.sum$bac.total.on.land
+      df.annual.total.load$in.stream <- df.annual.total.load$in.stream + df.sum$bac.total.in.stream
+      rm(df.sum)
+    }
+    rm(df.tmp)
+  }
+  return(df.annual.total.load)
+}
+
+
+
