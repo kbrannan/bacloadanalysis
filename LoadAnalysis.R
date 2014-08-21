@@ -1,0 +1,60 @@
+# Bacteria Load Analysis
+# Last Updated: 2014/08/20
+# This script runs sub-models and then summarizes load from sources and locations
+
+## set options
+options(stringsAsFactors = FALSE)
+## load packages
+library(doBy)
+
+# define directories
+chr.PEST.dir <- "C:/Temp/PEST/BigElkPEST/host"
+chr.sub.models.dir <- paste0(chr.PEST.dir,"/sub-models")
+chr.source.summary.dir <- paste0(chr.PEST.dir,"/SourceAnalysis")
+# load source summary functions
+source(paste0(chr.source.summary.dir,"/","SourceAnalysisFunctions.R"))
+
+## get sub-model folders
+chr.sub.model.dirs <- paste0(chr.sub.models.dir,"/",list.files(path=chr.sub.models.dir))
+
+## get sub-model files (exclude "General" folder because that does not have a sub-model, yet)
+chr.sub.model.files <- paste0(chr.sub.model.dirs[-grep("./General",chr.sub.model.dirs)],"/",list.files(path=chr.sub.model.dirs[-grep("./General",chr.sub.model.dirs)],pattern="\\.R"))
+
+# define number of subwatersheds
+sub.wtsd.num <- 18
+
+# run source sub-models and get raw source data 
+lt.raw <- raw.source.data(sub.wtsd.num,chr.sub.model.dirs)
+
+##
+chr.names <- names(lt.raw)
+
+n.dfs <- length(chr.names)
+
+for(ii in 1:n.dfs) {
+  print(paste0("df is ",chr.names[ii]))
+#  print(grep("bac",grep("land",names(as.data.frame(lt.raw[chr.names[ii]])),value=TRUE),value=TRUE))
+#  print(grep("bac",grep("stream",names(as.data.frame(lt.raw[chr.names[ii]])),value=TRUE),value=TRUE))
+  print(grep("bac",grep("total",names(as.data.frame(lt.raw[chr.names[ii]])),value=TRUE),value=TRUE))
+}
+
+
+
+
+
+lt.name <- function(lt.in,ii) {
+  n.names <- length(names(lt.in))
+  if(ii > n.names) {
+    return(NA)
+  } 
+  else {
+    return(c(names(lt.in)[ii],names(lt.in[[names(lt.in)[ii]]])))
+  }
+}
+
+lt.name(lt.raw,5)
+str(lt.raw$cow.calf.all)
+
+junk <- lt.raw$cow.calf.all
+
+cc.junk <- junk[junk$subwtsd == 1,]
