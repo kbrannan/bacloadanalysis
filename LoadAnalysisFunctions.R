@@ -191,6 +191,11 @@ annual.load.by.subwtsd <- function(lt.data) {
   ## get the names and the count of the data frames in the list
   chr.names <- names(lt.data)
   n.dfs <- length(chr.names)
+  ## get number of sub-watersheds
+  df.tmp <- as.data.frame(lt.data[chr.names[1]])
+  names(df.tmp) <- gsub(paste0(chr.names[1],"."),"",names(df.tmp))
+  sub.wtsd.num <- max(df.tmp$subwtsd)
+  rm(df.tmp)
   ## get the total annual load to land and stream by sub-watershed from all the sources
   df.annual.total.load <- data.frame(subwtsd=1:sub.wtsd.num,on.land=0,in.stream=0)
   for(ii in 1:n.dfs) {
@@ -211,5 +216,45 @@ annual.load.by.subwtsd <- function(lt.data) {
   return(df.annual.total.load)
 }
 
+monthly.load.by.subwtsd <- function(lt.data) {
+  library(doBy)
+  ## get the names and the count of the data frames in the list
+  chr.names <- names(lt.data)
+  n.dfs <- length(chr.names)
+  ## get number of sub-watersheds
+  df.tmp <- as.data.frame(lt.data[chr.names[1]])
+  names(df.tmp) <- gsub(paste0(chr.names[1],"."),"",names(df.tmp))
+  sub.wtsd.num <- max(df.tmp$subwtsd)
+  rm(df.tmp)
+  ## create data frame for monthly loads
+  df.monthly.total.load <- data.frame(subwtsd=1,month=1:12,on.land=0,in.stream=0)
+  for(sii in 2:18) {
+    df.monthly.total.load <-rbind(df.monthly.total.load,data.frame(subwtsd=sii,month=1:12,on.land=0,in.stream=0))
+  }
+  for(ii in 1:n.dfs) {
+    df.tmp <- as.data.frame(lt.data[chr.names[ii]])
+    names(df.tmp) <- gsub(paste0(chr.names[ii],"."),"",names(df.tmp))
+    if(length(grep("[Mm]onth",names(df.tmp))) == 0) {
+      df.annual.total.load$on.land <- df.annual.total.load$on.land + df.tmp$bac.total.on.land
+      df.annual.total.load$in.stream <- df.annual.total.load$in.stream + df.tmp$bac.total.in.stream
+    }
+    if(length(grep("[Mm]onth",names(df.tmp))) > 0) {
+      df.sum <- summaryBy(bac.total.on.land + bac.total.in.stream ~ subwtsd, data=df.tmp,FUN=c(sum), keep.names=TRUE)
+      df.annual.total.load$on.land <- df.annual.total.load$on.land + df.sum$bac.total.on.land
+      df.annual.total.load$in.stream <- df.annual.total.load$in.stream + df.sum$bac.total.in.stream
+      rm(df.sum)
+    }
+    rm(df.tmp)
+  }
+  return(df.annual.total.load)
+}
 
-
+numberOfDaysInMonth <- function(date) {
+  m <- format(date, format="%m")
+  
+  while (format(date, format="%m") == m) {
+    date <- date + 1
+  }
+  
+  return(as.integer(format(date - 1, format="%d")))
+}
